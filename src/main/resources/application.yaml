@@ -1,0 +1,42 @@
+spring.application.name: cloud_file_storage
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: pavel
+    password: pavel
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: none
+  liquibase:
+    change-log: db/changelog/changelog-master.yaml
+    enabled: true
+  data:
+    redis:
+      host: localhost
+      port: 6379
+    session:
+      store-type: redis
+      timeout: 30m
+
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+logging:
+  level:
+    root: info
+    org.springframework.security: TRACE
+    org.springframework.web: TRACE
+
+
+minio:
+  url: http://localhost:9000
+  credentials:
+    user: minioadmin
+    password: minioadmin
+  bucket:
+    name: disk
+  user:
+    memory: 500
