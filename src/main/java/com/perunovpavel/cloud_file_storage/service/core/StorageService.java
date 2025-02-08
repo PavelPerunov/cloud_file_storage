@@ -11,7 +11,8 @@ public interface StorageService {
 
     void createFolder(String name);
 
-    void deleteFile(String fileName);
+    void deleteFile(String fileName, String folder);
+    void deleteMultipleFiles(List<String> fileNames, String folder);
 
     void deleteFolder(String folderName);
 
@@ -19,7 +20,9 @@ public interface StorageService {
 
     void renameFolder(String oldName, String newName);
 
-    void uploadFile(MultipartFile file);
+    void uploadFile(MultipartFile file, String folder);
+
+    void uploadMultipleFiles(List<MultipartFile> files, String folder);
 
     Resource downloadFile(String filename);
 

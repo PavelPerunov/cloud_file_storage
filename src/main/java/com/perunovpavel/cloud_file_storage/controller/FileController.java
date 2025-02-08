@@ -16,27 +16,41 @@ import java.util.List;
 public class FileController {
     private final StorageServiceImpl storageService;
 
-    @PostMapping
-    public ResponseEntity<String> upload(
-            @RequestParam("file") MultipartFile file) {
-        storageService.uploadFile(file);
-        return ResponseEntity.status(HttpStatus.CREATED).body("File has been uploaded");
-    }
-
     @GetMapping
-    public ResponseEntity<?> listAllFiles() {
+    public ResponseEntity<?> listAll() {
         List<FileResponseDto> files = storageService.listAllFilesOfUser();
         return ResponseEntity.ok(files);
     }
 
-    @GetMapping("folders/{folder}")
-    public ResponseEntity<?> listFilesInFolder(@PathVariable String folder) {
-        List<FileResponseDto> files = storageService.listFilesInSubfolder(folder);
-        return ResponseEntity.ok(files);
+    @PostMapping
+    public ResponseEntity<String> upload(@RequestParam(value = "folder", required = false) String folder,
+                                         @RequestParam("file") MultipartFile file) {
+        storageService.uploadFile(file, folder);
+        return ResponseEntity.status(HttpStatus.CREATED).body("File has been uploaded");
+    }
+
+    @PostMapping("/upload-multiple")
+    public ResponseEntity<String> uploadMultiple(@RequestParam(value = "folder", required = false) String folder,
+                                                 @RequestParam("files") List<MultipartFile> files) {
+        storageService.uploadMultipleFiles(files, folder);
+        return ResponseEntity.status(HttpStatus.CREATED).body("Files has been uploaded");
+    }
+
+    @DeleteMapping("/{fileName}")
+    public ResponseEntity<String> delete(@PathVariable String fileName,
+                                         @RequestParam(value = "folder", required = false) String folder) {
+        storageService.deleteFile(fileName, folder);
+        return ResponseEntity.ok("File has been deleted");
+    }
+
+    @DeleteMapping("/delete-multiple")
+    public ResponseEntity<String> deleteMultiple(
+            @RequestParam(value = "folder", required = false) String folder){
+        return ResponseEntity.ok("Files has been deleted");
     }
 
     @GetMapping("/{filename}")
-    public ResponseEntity<Resource> downloadFile(@PathVariable String filename) {
+    public ResponseEntity<Resource> download(@PathVariable String filename) {
         Resource resource = storageService.downloadFile(filename);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
@@ -44,37 +58,14 @@ public class FileController {
                 .body(resource);
     }
 
-    @DeleteMapping("/{fileName}")
-    public ResponseEntity<String> deleteFile(@PathVariable String fileName) {
-        storageService.deleteFile(fileName);
-        return ResponseEntity.ok("File has been deleted");
-    }
-
-    @DeleteMapping("/folders/{folderName}")
-    public ResponseEntity<String> deleteFolder(@PathVariable String folderName) {
-        storageService.deleteFolder(folderName);
-        return ResponseEntity.ok("Folder has been deleted");
-    }
 
     @PatchMapping("/{oldName}/rename")
-    public ResponseEntity<String> renameFile(@PathVariable String oldName,
-                                             @RequestParam String newName) {
+    public ResponseEntity<String> rename(@PathVariable String oldName,
+                                         @RequestParam String newName) {
         storageService.renameFile(oldName, newName);
         return ResponseEntity.ok("File rename successfully");
     }
 
-    @PatchMapping("/folders/{oldName}/rename")
-    public ResponseEntity<String> renameFolder(@PathVariable String oldName,
-                                               @RequestParam String newName) {
-        storageService.renameFolder(oldName, newName);
-        return ResponseEntity.ok("Folder rename successfully");
-    }
-
-    @PostMapping("/folders")
-    public ResponseEntity<String> createFolder(@RequestParam String folderName) {
-        storageService.createFolder(folderName);
-        return ResponseEntity.status(HttpStatus.CREATED).body("Folder has been created");
-    }
 
     @GetMapping("/search")
     public ResponseEntity<?> search(@RequestParam String name) {

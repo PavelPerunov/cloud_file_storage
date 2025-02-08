@@ -72,19 +72,24 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
-    public void deleteFile(String fileName) {
+    public void deleteFile(String fileName, String folder) {
         Long userId = minioService.getUserIdFromSecurityContext();
-        String filePath = MinioServiceImpl.buildUserPrefix(userId) + fileName;
+        String filePath = MinioServiceImpl.buildUserPrefix(userId) + (folder != null ? folder + "/" : "") + fileName;
+
+        if (!minioService.isObjectExists(filePath)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found");
+        }
+
         try {
-
-            if (!minioService.isObjectExists(filePath)) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found");
-            }
-
             minioService.deleteObject(filePath);
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Exception when deleting file : " + e.getMessage());
         }
+    }
+
+    @Override
+    public void deleteMultipleFiles(List<String> fileNames, String folder) {
+
     }
 
     @Override
@@ -107,9 +112,9 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
-    public void uploadFile(MultipartFile file) {
+    public void uploadFile(MultipartFile file, String folder) {
         Long userId = minioService.getUserIdFromSecurityContext();
-        String filePath = MinioServiceImpl.buildUserPrefix(userId) + file.getOriginalFilename();
+        String filePath = MinioServiceImpl.buildUserPrefix(userId) + (folder != null ? folder + "/" : "") + file.getOriginalFilename();
         String folderPath = filePath + "/";
 
         if (minioService.isObjectExists(folderPath)) {
@@ -123,6 +128,13 @@ public class StorageServiceImpl implements StorageService {
             minioService.putObject(filePath, file.getInputStream(), file.getSize(), file.getContentType());
         } catch (Exception e) {
             throw new RuntimeException("Error uploading file", e);
+        }
+    }
+
+    @Override
+    public void uploadMultipleFiles(List<MultipartFile> files, String folder) {
+        for (MultipartFile file : files) {
+            uploadFile(file, folder);
         }
     }
 
