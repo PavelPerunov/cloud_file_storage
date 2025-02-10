@@ -56,7 +56,7 @@ public class UserService extends BaseUserService {
     private void validateEmailForRegistration(UserRegisterRequestDto userRegisterRequestDto) {
         findByEmail(userRegisterRequestDto.getEmail()).ifPresent(
                 user -> {
-                    throw new UserAlreadyExistsException("Пользователь с таким email уже существует");
+                    throw new UserAlreadyExistsException("User with  the same email already exists");
                 }
         );
     }
