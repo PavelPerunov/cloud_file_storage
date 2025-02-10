@@ -16,12 +16,6 @@ import java.util.List;
 public class FileController {
     private final StorageServiceImpl storageService;
 
-    @GetMapping
-    public ResponseEntity<?> listAll() {
-        List<FileResponseDto> files = storageService.listAllFilesOfUser();
-        return ResponseEntity.ok(files);
-    }
-
     @PostMapping
     public ResponseEntity<String> upload(@RequestParam(value = "folder", required = false) String folder,
                                          @RequestParam("file") MultipartFile file) {
@@ -34,6 +28,12 @@ public class FileController {
                                                  @RequestParam("files") List<MultipartFile> files) {
         storageService.uploadMultipleFiles(files, folder);
         return ResponseEntity.status(HttpStatus.CREATED).body("Files has been uploaded");
+    }
+
+    @GetMapping
+    public ResponseEntity<?> listAll() {
+        List<FileResponseDto> files = storageService.listAllFilesOfUser();
+        return ResponseEntity.ok(files);
     }
 
     @DeleteMapping("/{fileName}")
@@ -61,8 +61,13 @@ public class FileController {
     }
 
     @GetMapping("/download-multiple")
-    public ResponseEntity<Resource> downloadMultiple(@RequestParam("files") List<String> files) {
-        return null;
+    public ResponseEntity<Resource> downloadMultiple(@RequestParam("files") List<String> files,
+                                                     @RequestParam(value = "folder", required = false) String folder) {
+        Resource zipResource = storageService.downloadMultipleFiles(files, folder);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"downloaded_files.zip\"")
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(zipResource);
     }
 
     @PatchMapping("/{oldName}/rename")

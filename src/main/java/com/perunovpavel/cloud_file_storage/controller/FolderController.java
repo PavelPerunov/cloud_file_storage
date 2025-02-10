@@ -22,23 +22,23 @@ public class FolderController {
         return ResponseEntity.ok(files);
     }
 
+    @PostMapping()
+    public ResponseEntity<String> create(@RequestParam String folderName,
+                                         @RequestParam(value = "mainFolder", required = false) String mainFolder) {
+        storageService.createFolder(folderName,mainFolder);
+        return ResponseEntity.status(HttpStatus.CREATED).body("Folder has been created");
+    }
+
     @DeleteMapping("/{folderName}")
-    public ResponseEntity<String> deleteFolder(@PathVariable String folderName) {
+    public ResponseEntity<String> delete(@PathVariable String folderName) {
         storageService.deleteFolder(folderName);
         return ResponseEntity.ok("Folder has been deleted");
     }
 
     @PatchMapping("/{oldName}/rename")
-    public ResponseEntity<String> renameFolder(@PathVariable String oldName,
-                                               @RequestParam String newName) {
+    public ResponseEntity<String> rename(@PathVariable String oldName,
+                                         @RequestParam String newName) {
         storageService.renameFolder(oldName, newName);
         return ResponseEntity.ok("Folder rename successfully");
     }
-
-    @PostMapping()
-    public ResponseEntity<String> createFolder(@RequestParam String folderName) {
-        storageService.createFolder(folderName);
-        return ResponseEntity.status(HttpStatus.CREATED).body("Folder has been created");
-    }
-
 }

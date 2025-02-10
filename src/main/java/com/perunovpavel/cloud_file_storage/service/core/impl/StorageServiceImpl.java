@@ -8,6 +8,7 @@ import com.perunovpavel.cloud_file_storage.service.core.StorageService;
 import io.minio.*;
 import io.minio.messages.Item;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
@@ -16,8 +17,11 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @Service
 @RequiredArgsConstructor
@@ -44,6 +48,28 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
+    public Resource downloadMultipleFiles(List<String> files, String folder) {
+        try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+             ZipOutputStream zipOutputStream = new ZipOutputStream(byteArrayOutputStream)) {
+
+            for (String file : files) {
+                Resource resource = downloadFile(file, folder);
+
+                ZipEntry zipEntry = new ZipEntry(file);
+                zipOutputStream.putNextEntry(zipEntry);
+                resource.getInputStream().transferTo(zipOutputStream);
+                zipOutputStream.closeEntry();
+            }
+
+            zipOutputStream.finish();
+
+            return new ByteArrayResource(byteArrayOutputStream.toByteArray());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Exception when downloading multiple files: " + e.getMessage());
+        }
+    }
+
+    @Override
     public void createMainUserFolder(Long userId) {
         String prefix = MinioServiceImpl.buildUserPrefix(userId);
         try {
@@ -54,9 +80,9 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
-    public void createFolder(String name) {
+    public void createFolder(String name, String mainFolder) {
         Long userId = minioService.getUserIdFromSecurityContext();
-        String folderName = MinioServiceImpl.buildUserPrefix(userId) + name + "/";
+        String folderName = MinioServiceImpl.buildUserPrefix(userId) + (mainFolder != null ? mainFolder + "/" : "") + name + "/";
         String fileName = MinioServiceImpl.buildUserPrefix(userId) + name;
         if (minioService.isObjectExists(folderName)) {
             throw new FolderAlreadyExistsException("Folder with the same name already exists");
