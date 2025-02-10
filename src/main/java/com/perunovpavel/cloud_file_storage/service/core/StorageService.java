@@ -33,7 +33,5 @@ public interface StorageService {
 
     List<FileResponseDto> listFilesInSubfolder(String subfolder);
 
-//    void testMethodForGit();
-
     FileResponseDto search(String name);
 }
