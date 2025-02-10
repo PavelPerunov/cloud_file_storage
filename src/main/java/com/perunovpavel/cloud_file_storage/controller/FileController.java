@@ -44,20 +44,26 @@ public class FileController {
     }
 
     @DeleteMapping("/delete-multiple")
-    public ResponseEntity<String> deleteMultiple(
-            @RequestParam(value = "folder", required = false) String folder){
+    public ResponseEntity<String> deleteMultiple(@RequestParam("files") List<String> files,
+                                                 @RequestParam(value = "folder", required = false) String folder) {
+        storageService.deleteMultipleFiles(files, folder);
         return ResponseEntity.ok("Files has been deleted");
     }
 
     @GetMapping("/{filename}")
-    public ResponseEntity<Resource> download(@PathVariable String filename) {
-        Resource resource = storageService.downloadFile(filename);
+    public ResponseEntity<Resource> download(@PathVariable String filename,
+                                             @RequestParam(value = "folder", required = false) String folder) {
+        Resource resource = storageService.downloadFile(filename, folder);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(resource);
     }
 
+    @GetMapping("/download-multiple")
+    public ResponseEntity<Resource> downloadMultiple(@RequestParam("files") List<String> files) {
+        return null;
+    }
 
     @PatchMapping("/{oldName}/rename")
     public ResponseEntity<String> rename(@PathVariable String oldName,

@@ -12,6 +12,7 @@ public interface StorageService {
     void createFolder(String name);
 
     void deleteFile(String fileName, String folder);
+
     void deleteMultipleFiles(List<String> fileNames, String folder);
 
     void deleteFolder(String folderName);
@@ -24,8 +25,8 @@ public interface StorageService {
 
     void uploadMultipleFiles(List<MultipartFile> files, String folder);
 
-    Resource downloadFile(String filename);
-
+    Resource downloadFile(String filename, String folder);
+//    Resource downloadMultipleFiles(List<MultipartFile> files, String folder);
 
     List<FileResponseDto> listAllFilesOfUser();
 

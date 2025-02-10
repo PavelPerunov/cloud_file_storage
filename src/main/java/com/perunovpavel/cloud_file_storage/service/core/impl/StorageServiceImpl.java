@@ -25,7 +25,7 @@ public class StorageServiceImpl implements StorageService {
     private final MinioServiceImpl minioService;
 
     @Override
-    public Resource downloadFile(String filename) {
+    public Resource downloadFile(String filename, String folder) {
         Long userId = minioService.getUserIdFromSecurityContext();
         String filePath = MinioServiceImpl.buildUserPrefix(userId) + filename;
 
@@ -89,7 +89,9 @@ public class StorageServiceImpl implements StorageService {
 
     @Override
     public void deleteMultipleFiles(List<String> fileNames, String folder) {
-
+        for (String fileName : fileNames) {
+            deleteFile(fileName, folder);
+        }
     }
 
     @Override
