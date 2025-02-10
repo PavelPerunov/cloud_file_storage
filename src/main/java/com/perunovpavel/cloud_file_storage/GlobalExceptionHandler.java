@@ -5,7 +5,6 @@ import com.perunovpavel.cloud_file_storage.model.dto.ErrorResponseDto;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
@@ -18,7 +17,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleUserAlreadyExistsException(UserAlreadyExistsException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ErrorResponseDto.builder()
-                        .status(String.valueOf(HttpStatus.CONFLICT))
+                        .status(HttpStatus.CONFLICT.value())
                         .error(HttpStatus.CONFLICT.getReasonPhrase())
                         .message(ex.getMessage())
                         .build());
@@ -28,9 +27,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleResponseStatusException(ResponseStatusException ex) {
         return ResponseEntity.status(ex.getStatusCode())
                 .body(ErrorResponseDto.builder()
-                        .status(String.valueOf(ex.getStatusCode()))
-                        .error(ex.getStatusCode().toString())
-                        .message(ex.getMessage())
+                        .status(ex.getStatusCode().value())
+                        .error(ex.getBody().getTitle())
+                        .message(ex.getBody().getDetail())
                         .build());
     }
 
@@ -38,7 +37,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleBadCredentialsException(BadCredentialsException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ErrorResponseDto.builder()
-                        .status(String.valueOf(HttpStatus.UNAUTHORIZED))
+                        .status(HttpStatus.UNAUTHORIZED.value())
                         .error(HttpStatus.UNAUTHORIZED.getReasonPhrase())
                         .message(ex.getMessage())
                         .build());
@@ -48,7 +47,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleFolderAlreadyExistsException(FolderAlreadyExistsException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ErrorResponseDto.builder()
-                        .status(String.valueOf(HttpStatus.CONFLICT))
+                        .status(HttpStatus.CONFLICT.value())
                         .error(HttpStatus.CONFLICT.getReasonPhrase())
                         .message(ex.getMessage())
                         .build());
@@ -58,7 +57,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleFileAlreadyExistsException(FileAlreadyExistsException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ErrorResponseDto.builder()
-                        .status(String.valueOf(HttpStatus.CONFLICT))
+                        .status(HttpStatus.CONFLICT.value())
                         .error(HttpStatus.CONFLICT.getReasonPhrase())
                         .message(ex.getMessage())
                         .build());
@@ -68,7 +67,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleFolderNotFoundException(FolderNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ErrorResponseDto.builder()
-                        .status(String.valueOf(HttpStatus.NOT_FOUND))
+                        .status(HttpStatus.NOT_FOUND.value())
                         .error(HttpStatus.NOT_FOUND.getReasonPhrase())
                         .message(ex.getMessage())
                         .build());
@@ -78,7 +77,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleFileNotFoundException(FileNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ErrorResponseDto.builder()
-                        .status(String.valueOf(HttpStatus.NOT_FOUND))
+                        .status(HttpStatus.NOT_FOUND.value())
                         .error(HttpStatus.NOT_FOUND.getReasonPhrase())
                         .message(ex.getMessage())
                         .build());
@@ -88,7 +87,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleInvalidRoleException(InvalidRoleException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ErrorResponseDto.builder()
-                        .status(String.valueOf(HttpStatus.BAD_REQUEST))
+                        .status(HttpStatus.BAD_REQUEST.value())
                         .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
                         .message(ex.getMessage())
                         .build());
@@ -98,7 +97,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleUserNotFoundException(UserNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ErrorResponseDto.builder()
-                        .status(String.valueOf(HttpStatus.NOT_FOUND))
+                        .status(HttpStatus.NOT_FOUND.value())
                         .error(HttpStatus.NOT_FOUND.getReasonPhrase())
                         .message(ex.getMessage())
                         .build());
@@ -108,7 +107,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleRuntimeException(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ErrorResponseDto.builder()
-                        .status(String.valueOf(HttpStatus.INTERNAL_SERVER_ERROR))
+                        .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                         .error(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase())
                         .message(ex.getMessage())
                         .build());

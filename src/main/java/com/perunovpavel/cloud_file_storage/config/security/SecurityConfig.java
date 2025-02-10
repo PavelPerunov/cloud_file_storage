@@ -1,10 +1,14 @@
 package com.perunovpavel.cloud_file_storage.config.security;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.perunovpavel.cloud_file_storage.config.CustomAuthenticationEntryPoint;
 import com.perunovpavel.cloud_file_storage.config.CustomUserDetailsService;
+import com.perunovpavel.cloud_file_storage.model.dto.ErrorResponseDto;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -33,22 +37,32 @@ public class SecurityConfig {
                         .authenticationEntryPoint(customAuthenticationEntryPoint()))
                 .logout(
                         logout -> logout
-                                .logoutUrl("/api/auth/logout")
+                                .logoutUrl("/api/v1/auth/logout")
                                 .logoutSuccessHandler((request, response, authentication) -> {
                                             if (authentication == null || !authentication.isAuthenticated()) {
+                                                String jsonErrorMessage = getJsonErrorMessage();
+                                                response.setContentType("application/json");
                                                 response.setCharacterEncoding("UTF-8");
                                                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                                                response.getWriter().write("Пользователь не авторизован для выполнения logout.");
+                                                response.getWriter().write(jsonErrorMessage);
                                                 return;
                                             }
                                             response.setCharacterEncoding("UTF-8");
                                             response.setStatus(HttpServletResponse.SC_OK);
-                                            response.getWriter().write("Logout successful!Меня вывел спринг");
+                                            response.getWriter().write("Logout successful!");
                                         }
                                 )
                                 .invalidateHttpSession(true))
                 .requestCache(RequestCacheConfigurer::disable)
                 .build();
+    }
+
+    private static String getJsonErrorMessage() throws JsonProcessingException {
+        return new ObjectMapper().writeValueAsString(ErrorResponseDto.builder()
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .error(HttpStatus.UNAUTHORIZED.getReasonPhrase())
+                .message("The user is not authorized to perform logout")
+                .build());
     }
 
     @Bean
