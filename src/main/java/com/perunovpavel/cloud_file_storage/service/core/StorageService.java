@@ -9,7 +9,7 @@ import java.util.List;
 public interface StorageService {
     void createMainUserFolder(Long userId);
 
-    void createFolder(String name,String subfolder);
+    void createFolder(String name, String subfolder);
 
     void deleteFile(String fileName, String folder);
 
@@ -26,12 +26,14 @@ public interface StorageService {
     void uploadMultipleFiles(List<MultipartFile> files, String folder);
 
     Resource downloadFile(String filename, String folder);
+
     Resource downloadMultipleFiles(List<String> files, String folder);
 
     List<FileResponseDto> listAllFilesOfUser();
 
     List<FileResponseDto> listFilesInSubfolder(String subfolder);
 
+//    void testMethodForGit();
 
     FileResponseDto search(String name);
 }
