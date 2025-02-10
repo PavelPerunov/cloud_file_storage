@@ -29,13 +29,12 @@ public class AuthService {
     private final UserMapper mapper;
 
     public UserResponseDto login(UserAuthRequestDto userAuthRequestDto, HttpServletRequest request) {
-        User user = userRepository.findByEmail(userAuthRequestDto.getEmail())
-                .orElseThrow(() -> new BadCredentialsException("Invalid email"));
+        User user = findAndValidUser(userAuthRequestDto);
+        setAuthentication(userAuthRequestDto, request, user);
+        return mapper.toUserResponseDto(user);
+    }
 
-        if (!passwordEncoder.matches(userAuthRequestDto.getPassword(), user.getPassword())) {
-            throw new BadCredentialsException("Invalid password");
-        }
-
+    private void setAuthentication(UserAuthRequestDto userAuthRequestDto, HttpServletRequest request, User user) {
         Authentication authentication = new UsernamePasswordAuthenticationToken(
                 user.getEmail(),
                 userAuthRequestDto.getPassword(),
@@ -47,7 +46,16 @@ public class AuthService {
 
         HttpSession session = request.getSession(true);
         session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, SecurityContextHolder.getContext());
+    }
 
-        return mapper.toUserResponseDto(user);
+    private User findAndValidUser(UserAuthRequestDto userAuthRequestDto) {
+        User user = userRepository.findByEmail(userAuthRequestDto.getEmail())
+                .orElseThrow(() -> new BadCredentialsException("Invalid data: user not found"));
+
+        if (!passwordEncoder.matches(userAuthRequestDto.getPassword(), user.getPassword())) {
+            throw new BadCredentialsException("Invalid data: incorrect password");
+        }
+
+        return user;
     }
 }
