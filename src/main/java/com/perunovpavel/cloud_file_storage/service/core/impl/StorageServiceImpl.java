@@ -31,16 +31,14 @@ public class StorageServiceImpl implements StorageService {
     @Override
     public Resource downloadFile(String filename, String folder) {
         Long userId = minioService.getUserIdFromSecurityContext();
-        String filePath = MinioServiceImpl.buildUserPrefix(userId) + filename;
+        String filePath = buildPath(userId, folder) + filename;
+
+        if (!minioService.isObjectExists(filePath)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found " + filePath);
+        }
 
         try {
-
-            if (!minioService.isObjectExists(filePath)) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found");
-            }
-
             GetObjectResponse minioFile = minioService.getObject(filePath);
-
             return new InputStreamResource(minioFile);
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Exception when downloading file : " + e.getMessage());
@@ -49,8 +47,7 @@ public class StorageServiceImpl implements StorageService {
 
     @Override
     public Resource downloadMultipleFiles(List<String> files, String folder) {
-        try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-             ZipOutputStream zipOutputStream = new ZipOutputStream(byteArrayOutputStream)) {
+        try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(); ZipOutputStream zipOutputStream = new ZipOutputStream(byteArrayOutputStream)) {
 
             for (String file : files) {
                 Resource resource = downloadFile(file, folder);
@@ -70,40 +67,12 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
-    public void createMainUserFolder(Long userId) {
-        String prefix = MinioServiceImpl.buildUserPrefix(userId);
-        try {
-            minioService.putObject(prefix, new ByteArrayInputStream(new byte[0]), 0, null);
-        } catch (Exception e) {
-            throw new RuntimeException("Error creating  main user folder", e);
-        }
-    }
-
-    @Override
-    public void createFolder(String name, String mainFolder) {
-        Long userId = minioService.getUserIdFromSecurityContext();
-        String folderName = MinioServiceImpl.buildUserPrefix(userId) + (mainFolder != null ? mainFolder + "/" : "") + name + "/";
-        String fileName = MinioServiceImpl.buildUserPrefix(userId) + name;
-        if (minioService.isObjectExists(folderName)) {
-            throw new FolderAlreadyExistsException("Folder with the same name already exists");
-        }
-        if (minioService.isObjectExists(fileName)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "File with the same name already exists (cannot create folder)");
-        }
-        try {
-            minioService.putObject(folderName, new ByteArrayInputStream(new byte[0]), 0, null);
-        } catch (Exception e) {
-            throw new RuntimeException("Error creating folder", e);
-        }
-    }
-
-    @Override
     public void deleteFile(String fileName, String folder) {
         Long userId = minioService.getUserIdFromSecurityContext();
-        String filePath = MinioServiceImpl.buildUserPrefix(userId) + (folder != null ? folder + "/" : "") + fileName;
+        String filePath = buildPath(userId, folder) + fileName;
 
         if (!minioService.isObjectExists(filePath)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found: " + filePath);
         }
 
         try {
@@ -121,14 +90,42 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
-    public void deleteFolder(String folderName) {
-        Long userId = minioService.getUserIdFromSecurityContext();
-        String folderPath = MinioServiceImpl.buildUserPrefix(userId) + (folderName.endsWith("/") ? folderName : folderName + "/");
+    public void createMainUserFolder(Long userId) {
+        String prefix = MinioServiceImpl.buildUserPrefix(userId);
         try {
-            if (!minioService.isObjectExists(folderPath)) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Folder not found");
-            }
+            minioService.putObject(prefix, new ByteArrayInputStream(new byte[0]), 0, null);
+        } catch (Exception e) {
+            throw new RuntimeException("Error creating  main user folder", e);
+        }
+    }
 
+    @Override
+    public void createFolder(String name, String mainFolder) {
+        Long userId = minioService.getUserIdFromSecurityContext();
+        String folderName = buildPath(userId, mainFolder) + name + "/";
+        String fileName = MinioServiceImpl.buildUserPrefix(userId) + name;
+        if (minioService.isObjectExists(folderName)) {
+            throw new FolderAlreadyExistsException("Folder with the same name already exists");
+        }
+        if (minioService.isObjectExists(fileName)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "File with the same name already exists (cannot create folder)");
+        }
+        try {
+            minioService.putObject(folderName, new ByteArrayInputStream(new byte[0]), 0, null);
+        } catch (Exception e) {
+            throw new RuntimeException("Error creating folder", e);
+        }
+    }
+
+    @Override
+    public void deleteFolder(String folderName, String subFolder) {
+        Long userId = minioService.getUserIdFromSecurityContext();
+        String folderPath = buildPath(userId, subFolder) + (folderName.endsWith("/") ? folderName : folderName + "/");
+
+        if (!minioService.isObjectExists(folderPath)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Folder not found");
+        }
+        try {
             Iterable<Result<Item>> results = minioService.listObjects(folderPath);
             for (Result<Item> result : results) {
                 Item item = result.get();
@@ -142,7 +139,7 @@ public class StorageServiceImpl implements StorageService {
     @Override
     public void uploadFile(MultipartFile file, String folder) {
         Long userId = minioService.getUserIdFromSecurityContext();
-        String filePath = MinioServiceImpl.buildUserPrefix(userId) + (folder != null ? folder + "/" : "") + file.getOriginalFilename();
+        String filePath = buildPath(userId, folder) + file.getOriginalFilename();
         String folderPath = filePath + "/";
 
         if (minioService.isObjectExists(folderPath)) {
@@ -167,22 +164,22 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
-    public void renameFile(String oldName, String newName) {
+    public void renameFile(String oldName, String newName, String folder) {
         Long userId = minioService.getUserIdFromSecurityContext();
-        String oldFilePath = MinioServiceImpl.buildUserPrefix(userId) + oldName;
-        String newFilePath = MinioServiceImpl.buildUserPrefix(userId) + newName;
+        String oldFilePath = buildPath(userId, folder) + oldName;
+        String newFilePath = buildPath(userId, folder) + newName;
 
+        if (!minioService.isObjectExists(oldFilePath)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found");
+        }
+
+        if (minioService.isObjectExists(newFilePath)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "File " + newName + " already exists");
+        }
         try {
-            if (!minioService.isObjectExists(oldFilePath)) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found");
-            }
-
-            if (minioService.isObjectExists(newFilePath)) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "File " + newName + " already exists");
-            }
 
             minioService.copyObject(newFilePath, oldFilePath);
-            minioService.deleteObject(oldName);
+            minioService.deleteObject(oldFilePath);
 
         } catch (Exception e) {
             throw new RuntimeException("Error RENAMING file: " + e.getMessage(), e);
@@ -190,10 +187,10 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
-    public void renameFolder(String oldName, String newName) {
+    public void renameFolder(String oldName, String newName, String folder) {
         Long userId = minioService.getUserIdFromSecurityContext();
-        String oldFolderPath = MinioServiceImpl.buildUserPrefix(userId) + oldName + "/";
-        String newFolderPath = MinioServiceImpl.buildUserPrefix(userId) + newName + "/";
+        String oldFolderPath = buildPath(userId, folder) + oldName + "/";
+        String newFolderPath = buildPath(userId, folder) + newName + "/";
 
         if (!minioService.isObjectExists(oldFolderPath)) {
             throw new FolderNotFoundException("Folder with same name not found");
@@ -211,76 +208,62 @@ public class StorageServiceImpl implements StorageService {
                 String newObjectName = oldObjectName.replaceFirst(oldFolderPath, newFolderPath);
                 minioService.copyObject(newObjectName, oldObjectName);
             }
-            deleteFolder(oldFolderPath);
+            deleteFolder(oldName, folder);
         } catch (Exception e) {
             throw new RuntimeException();
         }
     }
 
     @Override
-    public List<FileResponseDto> listAllFilesOfUser() {
+    public List<FileResponseDto> search(String name, String folder) {
+
         Long userId = minioService.getUserIdFromSecurityContext();
-        String prefix = MinioServiceImpl.buildUserPrefix(userId);
+        String prefix = buildPath(userId, folder);
 
-        return listObjects(prefix);
-    }
-
-    @Override
-    public List<FileResponseDto> listFilesInSubfolder(String subfolder) {
-        Long userId = minioService.getUserIdFromSecurityContext();
-        String prefix = MinioServiceImpl.buildUserPrefix(userId);
-        String fullPrefix = prefix + (subfolder.endsWith("/") ? subfolder : subfolder + "/");
-
-        return listObjects(fullPrefix);
-    }
-
-    @Override
-    public FileResponseDto search(String name) {
-        Long userId = minioService.getUserIdFromSecurityContext();
-        String prefixFile = MinioServiceImpl.buildUserPrefix(userId) + name;
-        String prefixFolder = MinioServiceImpl.buildUserPrefix(userId) + name + "/";
-
-        boolean fileExists = minioService.isObjectExists(prefixFile);
-        boolean folderExists = minioService.isObjectExists(prefixFolder);
-
-        if (fileExists && folderExists) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Error: Both file and folder with name = '" + name + "' exist");
-        }
-
-        if (fileExists) {
-            return new FileResponseDto(name);
-        }
-        if (folderExists) {
-            return new FileResponseDto(name);
-        }
-        throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                "No file or folder found with name = '" + name + "'");
-    }
-
-    private List<FileResponseDto> listObjects(String path) {
         List<FileResponseDto> files = new ArrayList<>();
+        Iterable<Result<Item>> items = minioService.listObjects(prefix);
 
-        if (!minioService.isObjectExists(path)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Folder: " + path + " not found");
-        }
-
-        Iterable<Result<Item>> results = minioService.listObjects(path);
-
-        for (Result<Item> result : results) {
+        for (Result<Item> result : items) {
             try {
                 Item item = result.get();
                 String objectName = item.objectName();
+                String relativeName = objectName.substring(prefix.length());
 
-                if (objectName.equals(path)) {
+                if (relativeName.endsWith("/")) {
                     continue;
                 }
 
-                files.add(new FileResponseDto(objectName));
+                String baseName = getBaseName(relativeName);
+
+                if (baseName.equals(name)) {
+                    files.add(new FileResponseDto(relativeName));
+                }
             } catch (Exception e) {
-                throw new RuntimeException("Error retrieving file list", e);
+                throw new RuntimeException();
             }
         }
+        if (files.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Files with the same name isn't exists");
+        }
         return files;
+    }
+
+    private String getBaseName(String filename) {
+        int lastSlashIndex = filename.lastIndexOf('/');
+        String justName = (lastSlashIndex != -1)
+                ? filename.substring(lastSlashIndex + 1)
+                : filename;
+
+        int dotIndex = justName.lastIndexOf('.');
+        if (dotIndex == -1) {
+            return justName;
+        } else {
+            return justName.substring(0, dotIndex);
+        }
+    }
+
+    private String buildPath(Long userId, String folder) {
+        return MinioServiceImpl.buildUserPrefix(userId)
+               + (folder != null ? folder + "/" : "");
     }
 }

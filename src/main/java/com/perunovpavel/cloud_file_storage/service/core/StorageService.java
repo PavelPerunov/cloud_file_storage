@@ -15,11 +15,11 @@ public interface StorageService {
 
     void deleteMultipleFiles(List<String> fileNames, String folder);
 
-    void deleteFolder(String folderName);
+    void deleteFolder(String folderName, String subFolder);
 
-    void renameFile(String oldName, String newName);
+    void renameFile(String oldName, String newName, String folder);
 
-    void renameFolder(String oldName, String newName);
+    void renameFolder(String oldName, String newName, String folder);
 
     void uploadFile(MultipartFile file, String folder);
 
@@ -29,9 +29,5 @@ public interface StorageService {
 
     Resource downloadMultipleFiles(List<String> files, String folder);
 
-    List<FileResponseDto> listAllFilesOfUser();
-
-    List<FileResponseDto> listFilesInSubfolder(String subfolder);
-
-    FileResponseDto search(String name);
+    List<FileResponseDto> search(String name, String folder);
 }

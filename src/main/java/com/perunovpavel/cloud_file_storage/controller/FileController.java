@@ -30,26 +30,6 @@ public class FileController {
         return ResponseEntity.status(HttpStatus.CREATED).body("Files has been uploaded");
     }
 
-    @GetMapping
-    public ResponseEntity<?> listAll() {
-        List<FileResponseDto> files = storageService.listAllFilesOfUser();
-        return ResponseEntity.ok(files);
-    }
-
-    @DeleteMapping("/{fileName}")
-    public ResponseEntity<String> delete(@PathVariable String fileName,
-                                         @RequestParam(value = "folder", required = false) String folder) {
-        storageService.deleteFile(fileName, folder);
-        return ResponseEntity.ok("File has been deleted");
-    }
-
-    @DeleteMapping("/delete-multiple")
-    public ResponseEntity<String> deleteMultiple(@RequestParam("files") List<String> files,
-                                                 @RequestParam(value = "folder", required = false) String folder) {
-        storageService.deleteMultipleFiles(files, folder);
-        return ResponseEntity.ok("Files has been deleted");
-    }
-
     @GetMapping("/{filename}")
     public ResponseEntity<Resource> download(@PathVariable String filename,
                                              @RequestParam(value = "folder", required = false) String folder) {
@@ -70,17 +50,33 @@ public class FileController {
                 .body(zipResource);
     }
 
+    @DeleteMapping("/{fileName}")
+    public ResponseEntity<String> delete(@PathVariable String fileName,
+                                         @RequestParam(value = "folder", required = false) String folder) {
+        storageService.deleteFile(fileName, folder);
+        return ResponseEntity.ok("File has been deleted");
+    }
+
+    @DeleteMapping("/delete-multiple")
+    public ResponseEntity<String> deleteMultiple(@RequestParam("files") List<String> files,
+                                                 @RequestParam(value = "folder", required = false) String folder) {
+        storageService.deleteMultipleFiles(files, folder);
+        return ResponseEntity.ok("Files has been deleted");
+    }
+
     @PatchMapping("/{oldName}/rename")
     public ResponseEntity<String> rename(@PathVariable String oldName,
-                                         @RequestParam String newName) {
-        storageService.renameFile(oldName, newName);
+                                         @RequestParam String newName,
+                                         @RequestParam(value = "folder", required = false) String folder) {
+        storageService.renameFile(oldName, newName, folder);
         return ResponseEntity.ok("File rename successfully");
     }
 
-
     @GetMapping("/search")
-    public ResponseEntity<?> search(@RequestParam String name) {
-        FileResponseDto file = storageService.search(name);
-        return ResponseEntity.ok(file);
+    public ResponseEntity<?> search(@RequestParam String name,
+                                    @RequestParam(value = "folder", required = false) String folder) {
+        List<FileResponseDto> files = storageService.search(name, folder);
+        return ResponseEntity.ok(files);
     }
+
 }
